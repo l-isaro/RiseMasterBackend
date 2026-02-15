@@ -36,3 +36,6 @@ The backend is a functional MVP with the following completed features:
 - GET `/users/:id/progress` (mastery & gain data for dashboard)
 - GET `/topics` (list available topics)
 - Authentication (JWT)
+
+### [FRONTEND REPOSITORY LINK](https://github.com/l-isaro/RiseMasterFrontend)
+
