@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  title: RiseMasterBackend API
+  version: "1.0.1"
+  description: API for registering users, fetching scaffolded problems and submitting interactions.
+servers:
+  - url: http://localhost:5000/api
+paths:
+  /users/register:
+    post:
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserRegisterResponse"
+        "400":
+          description: Missing fields
+        "409":
+          description: Email already exists
+  /problems/next:
+    post:
+      summary: Get next scaffolded problem for a user
+      operationId: getNextProblem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProblemNextRequest"
+      responses:
+        "200":
+          description: Scaffolded problem returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemNextResponse"
+        "400":
+          description: user_id required
+        "404":
+          description: User not found or No problems available
+  /interactions/submit:
+    post:
+      summary: Submit a user interaction for a step/problem
+      operationId: submitInteraction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InteractionSubmitRequest"
+      responses:
+        "200":
+          description: Interaction recorded; may return new mastery probability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionSubmitResponse"
+        "400":
+          description: Validation error
+components:
+  schemas:
+    UserRegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - class_level
+      properties:
+        name:
+          type: string
+          example: "Alice Mwami"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        class_level:
+          type: string
+          description: "S1..S6"
+          example: "S6"
+    UserRegisterResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        name:
+          type: string
+        class_level:
+          type: string
+    ProblemNextRequest:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ProblemNextResponse:
+      type: object
+      properties:
+        problem_id:
+          type: string
+        skill_name:
+          type: string
+        topic:
+          type: string
+        full_question_text:
+          type: string
+        source:
+          type: string
+        target_exam_level:
+          type: string
+        concept_intro:
+          type: string
+          description: Optional short intro for the concept
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Step"
+        final_correct_answer:
+          type: string
+        final_explanation:
+          type: string
+    Step:
+      type: object
+      properties:
+        step_id:
+          type: string
+        order:
+          type: integer
+        instruction_text:
+          type: string
+        input_type:
+          type: string
+          example: text
+        explanation:
+          type: string
+        hints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Hint"
+    Hint:
+      type: object
+      properties:
+        level:
+          type: integer
+          description: 1=subtle,2=medium,3=explicit
+        text:
+          type: string
+    InteractionSubmitRequest:
+      type: object
+      required:
+        - user_id
+        - problem_id
+        - step_id
+        - correctness
+      properties:
+        user_id:
+          type: string
+        problem_id:
+          type: string
+        step_id:
+          type: string
+        correctness:
+          type: integer
+          description: 1 = correct, 0 = incorrect
+        hints_used:
+          type: integer
+          default: 0
+        time_taken:
+          type: number
+          format: float
+          default: 0.0
+    InteractionSubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        new_mastery:
+          type: number
+          format: float
+          nullable: true
+  securitySchemes: {}
