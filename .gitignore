@@ -1,0 +1,86 @@
+# Python-specific
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+env/
+.venv/
+ENV/
+
+# Environment variables and secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env.backup
+
+# Database files (SQLite)
+*.db
+*.sqlite3
+*.db-journal
+kwishema.db
+*.sqlite
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# macOS junk
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows junk
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Build and distribution
+build/
+dist/
+*.egg
+*.egg-info/
+*.eggs/
+MANIFEST
+
+# Logs and temporary files
+*.log
+*.logs
+logs/
+tmp/
+temp/
+
+# Testing and coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.pytest_cache/
+.pytest_cache/
+
+# Dependency management
+Pipfile.lock
+requirements.txt.bak
+
+# Migration files (if you add Alembic later)
+migrations/env.py
+migrations/versions/*.py
+!migrations/env.py
+!migrations/script.py.mako
+
+# Miscellaneous
+*.bak
+*.swp
+*.swo
+*~
