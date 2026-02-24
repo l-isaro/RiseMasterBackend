@@ -4,3 +4,4 @@ python-dotenv==1.0.1
 pyBKT==1.4.1
 pandas==2.2.2
 uuid
+gunicorn==21.2.0
