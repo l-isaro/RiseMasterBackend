@@ -5,36 +5,51 @@ from app.models import MasteryState, Interaction, Problem
 from datetime import datetime
 
 class BKTService:
-    def __init__(self):
-        self.model = Model(num_fits=20)
+    def __init__(self, num_fits: int = 1, max_interactions: int = 200):
+        self.num_fits = num_fits
+        self.max_interactions = max_interactions
 
-    def update_mastery_from_interactions(self, user_id: str, skill_name: str):
+    def update_mastery_from_interactions(self, user_id: str, skill_name: str) -> float:
         interactions = (
             Interaction.query
-            .join(Problem)
+            .join(Problem, Interaction.problem_id == Problem.problem_id)
             .filter(Interaction.user_id == user_id, Problem.skill_name == skill_name)
-            .order_by(Interaction.timestamp)
+            .order_by(Interaction.timestamp.asc())
+            .limit(self.max_interactions)
             .all()
         )
 
         if not interactions:
             return 0.0
 
-        data = []
+        rows = []
         for inter in interactions:
-            data.append({
-                'user_id': user_id,
-                'skill_name': skill_name,
-                'correct': inter.correctness,
-                'time': inter.timestamp 
+            if inter.correctness is None:
+                continue
+            rows.append({
+                "user_id": str(user_id),
+                "skill_name": str(skill_name),
+                "correct": int(inter.correctness),
             })
 
-        df = pd.DataFrame(data)
+        if not rows:
+            return 0.0
 
-        self.model.fit(data=df)
-        preds = self.model.predict_proba(data=df)
+        df = pd.DataFrame(rows)
 
-        latest_mastery = preds.iloc[-1]['state predictions'] if not preds.empty else 0.0
+        model = Model(num_fits=self.num_fits)
+        model.fit(data=df)
+
+        # ---- prediction (older pyBKT uses predict, not predict_proba) ----
+        preds = model.predict(data=df)
+
+        # Try common column names depending on version
+        latest_mastery = 0.0
+        if preds is not None and not preds.empty:
+            for col in ["state_predictions", "state predictions", "mastery", "prob_mastery"]:
+                if col in preds.columns:
+                    latest_mastery = float(preds.iloc[-1][col])
+                    break
 
         state = MasteryState.query.filter_by(user_id=user_id, skill_name=skill_name).first()
         if not state:
@@ -43,10 +58,6 @@ class BKTService:
 
         state.current_mastery_prob = latest_mastery
         state.last_updated = datetime.utcnow()
-        db.session.commit()
 
+        db.session.flush()
         return latest_mastery
-
-    def get_current_mastery(self, user_id: str, skill_name: str) -> float:
-        state = MasteryState.query.filter_by(user_id=user_id, skill_name=skill_name).first()
-        return state.current_mastery_prob if state else 0.0

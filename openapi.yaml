@@ -67,6 +67,26 @@ paths:
                 $ref: "#/components/schemas/InteractionSubmitResponse"
         "400":
           description: Validation error
+  /users/{user_id}/mastery:
+    get:
+      summary: Get user's mastery state across all skills
+      operationId: getUserMastery
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: User's mastery data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MasteryResponse"
+        "404":
+          description: User not found
 components:
   schemas:
     UserRegisterRequest:
@@ -190,4 +210,35 @@ components:
           type: number
           format: float
           nullable: true
+    MasteryResponse:
+      type: object
+      properties:
+        mastery:
+          type: array
+          items:
+            $ref: "#/components/schemas/MasteryRecord"
+        message:
+          type: string
+          nullable: true
+    MasteryRecord:
+      type: object
+      properties:
+        skill_name:
+          type: string
+          description: Name of the skill
+        mastery_prob:
+          type: number
+          format: float
+          description: Current mastery probability as a percentage (0-100)
+        delta:
+          type: number
+          format: float
+          description: Change in mastery probability from early to current state (as percentage)
+        last_updated:
+          type: string
+          format: date-time
+          description: ISO timestamp of last update
+        interactions_count:
+          type: integer
+          description: Total number of interactions for this skill
   securitySchemes: {}
