@@ -87,6 +87,29 @@ paths:
                 $ref: "#/components/schemas/MasteryResponse"
         "404":
           description: User not found
+  /admin/seed:
+    post:
+      summary: Seed the remote database (admin only)
+      operationId: seedRemoteDb
+      parameters:
+        - name: X-SEED-TOKEN
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Admin seed token required in X-SEED-TOKEN header
+      responses:
+        "200":
+          description: Seed successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+        "401":
+          description: Unauthorized
 components:
   schemas:
     UserRegisterRequest:

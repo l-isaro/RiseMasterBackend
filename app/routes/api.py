@@ -169,6 +169,17 @@ def get_user_mastery(user_id):
     result.sort(key=lambda x: x["delta"], reverse=True)
     return jsonify({"mastery": result}), 200
 
+@api_bp.route("/admin/seed", methods=["POST"])
+def seed_remote_db():
+    # basic safety so random people can't seed your DB
+    token = request.headers.get("X-SEED-TOKEN")
+    if token != os.getenv("SEED_TOKEN"):
+        return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    from seed import run_seed  # you will create run_seed() in seed.py
+    run_seed()
+    return jsonify({"success": True}), 200
+
 @api_bp.route('/openapi.yaml', methods=['GET'])
 def openapi_spec():
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
