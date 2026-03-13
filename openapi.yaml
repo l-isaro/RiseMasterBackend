@@ -4,7 +4,7 @@ info:
   version: "1.0.1"
   description: API for registering users, fetching scaffolded problems and submitting interactions.
 servers:
-  - url: http://localhost:5000/api
+  - url: https://risemasterbackend.onrender.com/api
 paths:
   /users/register:
     post:
