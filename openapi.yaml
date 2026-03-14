@@ -87,6 +87,27 @@ paths:
                 $ref: "#/components/schemas/MasteryResponse"
         "404":
           description: User not found
+    /users/login:
+    post:
+      summary: Login user (lookup by email or user_id)
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLoginRequest"
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserLoginResponse"
+        "400":
+          description: Provide user_id or email
+        "404":
+          description: User not found
   /admin/seed:
     post:
       summary: Seed the remote database (admin only)
@@ -264,4 +285,38 @@ components:
         interactions_count:
           type: integer
           description: Total number of interactions for this skill
+            UserLoginRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        user_id:
+          type: string
+          description: User UUID
+          example: "93482ab1-604e-4e30-9625-44def73bfb55"
+        email:
+          type: string
+          format: email
+          description: User email (case-insensitive lookup recommended)
+          example: "alice@example.com"
+      anyOf:
+        - required: [user_id]
+        - required: [email]
+      description: Provide either user_id or email. If both are provided, backend may prioritize user_id.
+
+    UserLoginResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "93482ab1-604e-4e30-9625-44def73bfb55"
+        name:
+          type: string
+          example: "Alice Mwami"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        class_level:
+          type: string
+          example: "S6"
   securitySchemes: {}
