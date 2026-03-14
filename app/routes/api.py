@@ -133,6 +133,86 @@ def submit_interaction():
 
     return jsonify({"success": True, "new_mastery": new_mastery}), 200
 
+@api_bp.route('/topics', methods=['GET'])
+def get_topics():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    target_level = get_target_exam_level(user.class_level)
+
+    rows = (
+        db.session.query(
+            Problem.topic,
+            Problem.skill_name,
+            func.count(Problem.problem_id).label("available_count")
+        )
+        .filter(Problem.target_exam_level == target_level)
+        .group_by(Problem.topic, Problem.skill_name)
+        .order_by(Problem.topic.asc(), Problem.skill_name.asc())
+        .all()
+    )
+
+    topics = [
+        {
+            "topic": r.topic,
+            "skill_name": r.skill_name,
+            "available_count": int(r.available_count),
+        }
+        for r in rows
+        if r.topic and r.skill_name
+    ]
+
+    return jsonify({
+        "target_exam_level": target_level,
+        "topics": topics
+    }), 200
+
+@api_bp.route('/users/<user_id>/stats', methods=['GET'])
+def get_user_stats(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    problems_solved = (
+        db.session.query(func.count(distinct(Interaction.problem_id)))
+        .filter(
+            Interaction.user_id == user_id,
+            Interaction.correctness == 1
+        )
+        .scalar()
+        or 0
+    )
+
+    total_interactions = (
+        db.session.query(func.count(Interaction.interaction_id))
+        .filter(Interaction.user_id == user_id)
+        .scalar()
+        or 0
+    )
+
+    avg_mastery = (
+        db.session.query(func.avg(MasteryState.current_mastery_prob))
+        .filter(MasteryState.user_id == user_id)
+        .scalar()
+    )
+    avg_mastery = float(avg_mastery) if avg_mastery is not None else 0.0
+
+    target_level = get_target_exam_level(user.class_level)
+
+    return jsonify({
+        "user_id": user.user_id,
+        "class_level": user.class_level,
+        "target_exam_level": target_level,
+        "problems_solved": int(problems_solved),
+        "total_interactions": int(total_interactions),
+        "overall_mastery_prob": avg_mastery,  # 0..1
+    }), 200
+
 
 @api_bp.route('/users/<user_id>/mastery', methods=['GET'])
 def get_user_mastery(user_id):
