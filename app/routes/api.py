@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify, send_file, abort
 from app.extensions import db
 from app.models import Hint, Step, User, Problem, Interaction, MasteryState
 from app.services.problem_manager import get_next_problem, get_next_scaffolded_problem
+from sqlalchemy import func
 from app.services.bkt_service import BKTService
 import uuid
 
