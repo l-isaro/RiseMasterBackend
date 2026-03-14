@@ -169,6 +169,36 @@ def get_user_mastery(user_id):
     result.sort(key=lambda x: x["delta"], reverse=True)
     return jsonify({"mastery": result}), 200
 
+@api_bp.route('/users/login', methods=['POST'])
+def login_user():
+    data = request.get_json(silent=True) or {}
+
+    user_id = (data.get("user_id") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if not user_id and not email:
+        return jsonify({"error": "Provide user_id or email"}), 400
+
+    user = None
+
+    if user_id:
+        # SQLAlchemy-safe get by primary key
+        user = db.session.get(User, user_id)
+    else:
+        # Email lookup (case-insensitive)
+        email_lower = email.lower()
+        user = User.query.filter(func.lower(User.email) == email_lower).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    return jsonify({
+        "user_id": user.user_id,
+        "name": user.name,
+        "email": user.email,
+        "class_level": user.class_level
+    }), 200
+
 @api_bp.route("/admin/seed", methods=["POST"])
 def seed_remote_db():
     # basic safety so random people can't seed your DB
