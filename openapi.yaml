@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: RiseMasterBackend API
-  version: "1.0.1"
-  description: API for registering users, fetching scaffolded problems, submitting interactions, viewing mastery, logging in users, and seeding the database.
+  version: "1.0.2"
+  description: API for registering users, logging in, fetching scaffolded problems, submitting interactions, viewing mastery, listing topics, viewing user stats, and seeding the database.
 
 servers:
   - url: https://risemasterbackend.onrender.com/api
@@ -74,6 +74,51 @@ paths:
         "404":
           description: User not found or No problems available
 
+  /problems/by-topic:
+    post:
+      summary: Get a scaffolded problem for a specific skill/topic
+      operationId: getProblemByTopic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProblemByTopicRequest"
+      responses:
+        "200":
+          description: Scaffolded problem returned for requested skill/topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemNextResponse"
+        "400":
+          description: user_id or skill_name missing
+        "404":
+          description: User not found or No problems available for this topic
+
+  /topics:
+    get:
+      summary: Get available topics for a user (based on seeded problems)
+      operationId: getTopics
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: Topics available for the user's target exam level
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopicsResponse"
+        "400":
+          description: user_id required
+        "404":
+          description: User not found
+
   /interactions/submit:
     post:
       summary: Submit a user interaction for a step/problem
@@ -112,6 +157,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MasteryResponse"
+        "404":
+          description: User not found
+
+  /users/{user_id}/stats:
+    get:
+      summary: Get user stats (solved problems, interactions count, overall mastery)
+      operationId: getUserStats
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: User stats returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserStatsResponse"
         "404":
           description: User not found
 
@@ -170,10 +236,6 @@ components:
         name:
           type: string
           example: "Alice Mwami"
-        email:
-          type: string
-          format: email
-          example: "alice@example.com"
         class_level:
           type: string
           example: "S6"
@@ -192,10 +254,8 @@ components:
           description: User email (case-insensitive lookup recommended)
           example: "alice@example.com"
       anyOf:
-        - required:
-            - user_id
-        - required:
-            - email
+        - required: [user_id]
+        - required: [email]
       description: Provide either user_id or email. If both are provided, backend may prioritize user_id.
 
     UserLoginResponse:
@@ -217,68 +277,66 @@ components:
 
     ProblemNextRequest:
       type: object
-      required:
-        - user_id
+      required: [user_id]
       properties:
         user_id:
           type: string
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+    ProblemByTopicRequest:
+      type: object
+      required: [user_id, skill_name]
+      properties:
+        user_id:
+          type: string
+          example: "93482ab1-604e-4e30-9625-44def73bfb55"
+        skill_name:
+          type: string
+          description: Skill identifier from the Problem.skill_name field
+          example: "maclaurin_series"
 
     ProblemNextResponse:
       type: object
       properties:
         problem_id:
           type: string
-          example: "prob-001"
         skill_name:
           type: string
-          example: "Algebra"
         topic:
           type: string
-          example: "Linear Equations"
         full_question_text:
           type: string
-          example: "Solve for x: 2x + 3 = 11"
         source:
           type: string
-          example: "Scaffolded Generator"
         target_exam_level:
           type: string
-          example: "S4"
         concept_intro:
           type: string
           nullable: true
           description: Optional short intro for the concept
-          example: "To solve a linear equation, isolate the variable."
         steps:
           type: array
           items:
             $ref: "#/components/schemas/Step"
         final_correct_answer:
           type: string
-          example: "x = 4"
         final_explanation:
           type: string
-          example: "Subtract 3 from both sides, then divide both sides by 2."
 
     Step:
       type: object
       properties:
         step_id:
           type: string
-          example: "step-001"
         order:
           type: integer
-          example: 1
         instruction_text:
           type: string
-          example: "Subtract 3 from both sides."
         input_type:
           type: string
-          example: "text"
+          example: text
         explanation:
           type: string
-          example: "This helps isolate the variable term."
         hints:
           type: array
           items:
@@ -289,54 +347,65 @@ components:
       properties:
         level:
           type: integer
-          description: 1=subtle, 2=medium, 3=explicit
-          example: 1
+          description: 1=subtle,2=medium,3=explicit
         text:
           type: string
-          example: "Try removing the constant from the left side first."
+
+    TopicsResponse:
+      type: object
+      properties:
+        target_exam_level:
+          type: string
+          example: "S6"
+        topics:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicAvailability"
+
+    TopicAvailability:
+      type: object
+      properties:
+        topic:
+          type: string
+          example: "Calculus"
+        skill_name:
+          type: string
+          example: "maclaurin_series"
+        available_count:
+          type: integer
+          example: 2
+      description: Available problem inventory for the given topic/skill.
 
     InteractionSubmitRequest:
       type: object
-      required:
-        - user_id
-        - problem_id
-        - step_id
-        - correctness
+      required: [user_id, problem_id, step_id, correctness]
       properties:
         user_id:
           type: string
-          example: "93482ab1-604e-4e30-9625-44def73bfb55"
         problem_id:
           type: string
-          example: "prob-001"
         step_id:
           type: string
-          example: "step-001"
         correctness:
           type: integer
           description: 1 = correct, 0 = incorrect
-          example: 1
         hints_used:
           type: integer
           default: 0
-          example: 1
         time_taken:
           type: number
           format: float
           default: 0.0
-          example: 12.5
 
     InteractionSubmitResponse:
       type: object
       properties:
         success:
           type: boolean
-          example: true
         new_mastery:
           type: number
           format: float
           nullable: true
-          example: 78.4
 
     MasteryResponse:
       type: object
@@ -348,7 +417,6 @@ components:
         message:
           type: string
           nullable: true
-          example: "Mastery retrieved successfully"
 
     MasteryRecord:
       type: object
@@ -356,25 +424,46 @@ components:
         skill_name:
           type: string
           description: Name of the skill
-          example: "Algebra"
         mastery_prob:
           type: number
           format: float
           description: Current mastery probability as a percentage (0-100)
-          example: 82.5
         delta:
           type: number
           format: float
           description: Change in mastery probability from early to current state (as percentage)
-          example: 12.3
         last_updated:
           type: string
           format: date-time
           description: ISO timestamp of last update
-          example: "2026-03-13T17:07:05Z"
         interactions_count:
           type: integer
           description: Total number of interactions for this skill
-          example: 14
+
+    UserStatsResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+          example: "93482ab1-604e-4e30-9625-44def73bfb55"
+        class_level:
+          type: string
+          example: "S6"
+        target_exam_level:
+          type: string
+          example: "S6"
+        problems_solved:
+          type: integer
+          description: Count of distinct problems with at least one correct interaction
+          example: 4
+        total_interactions:
+          type: integer
+          description: Total step interactions recorded
+          example: 18
+        overall_mastery_prob:
+          type: number
+          format: float
+          description: Average mastery probability across skills (0.0 - 1.0)
+          example: 0.72
 
   securitySchemes: {}
