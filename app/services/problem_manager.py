@@ -11,6 +11,32 @@ def get_target_exam_level(class_level: str) -> str:
     raise ValueError(f"Invalid class level: {class_level}")
 
 
+def get_problem_by_skill(skill_name: str, class_level: str):
+    target_level = get_target_exam_level(class_level)
+
+    problem = (
+        Problem.query
+        .filter(
+            Problem.target_exam_level == target_level,
+            Problem.skill_name == skill_name
+        )
+        .order_by(func.random())
+        .first()
+    )
+
+    if not problem:
+        return None, []
+
+    steps = (
+        Step.query
+        .filter(Step.problem_id == problem.problem_id)
+        .order_by(Step.order)
+        .all()
+    )
+
+    return problem, steps
+
+
 def get_next_problem(user_id: str, class_level: str):
     target_level = get_target_exam_level(class_level)
 
