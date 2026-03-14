@@ -23,6 +23,9 @@ The backend is a functional MVP with the following completed features:
 - Interactive Swagger documentation
 - SQLite database for development
 
+### Demo Video
+[Video Link](https://drive.google.com/file/d/1efsihEkL3o82n8-WdGREuAWRpGWu0F7Q/view?usp=sharing)
+
 ### Implemented Endpoints
 
 
