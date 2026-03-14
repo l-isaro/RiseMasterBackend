@@ -87,7 +87,7 @@ paths:
                 $ref: "#/components/schemas/MasteryResponse"
         "404":
           description: User not found
-    /users/login:
+  /users/login:
     post:
       summary: Login user (lookup by email or user_id)
       operationId: loginUser
