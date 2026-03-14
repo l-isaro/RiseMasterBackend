@@ -2,9 +2,11 @@ openapi: 3.0.3
 info:
   title: RiseMasterBackend API
   version: "1.0.1"
-  description: API for registering users, fetching scaffolded problems and submitting interactions.
+  description: API for registering users, fetching scaffolded problems, submitting interactions, viewing mastery, logging in users, and seeding the database.
+
 servers:
   - url: https://risemasterbackend.onrender.com/api
+
 paths:
   /users/register:
     post:
@@ -27,66 +29,7 @@ paths:
           description: Missing fields
         "409":
           description: Email already exists
-  /problems/next:
-    post:
-      summary: Get next scaffolded problem for a user
-      operationId: getNextProblem
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProblemNextRequest"
-      responses:
-        "200":
-          description: Scaffolded problem returned
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemNextResponse"
-        "400":
-          description: user_id required
-        "404":
-          description: User not found or No problems available
-  /interactions/submit:
-    post:
-      summary: Submit a user interaction for a step/problem
-      operationId: submitInteraction
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/InteractionSubmitRequest"
-      responses:
-        "200":
-          description: Interaction recorded; may return new mastery probability
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InteractionSubmitResponse"
-        "400":
-          description: Validation error
-  /users/{user_id}/mastery:
-    get:
-      summary: Get user's mastery state across all skills
-      operationId: getUserMastery
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: string
-          description: The user's unique identifier
-      responses:
-        "200":
-          description: User's mastery data retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MasteryResponse"
-        "404":
-          description: User not found
+
   /users/login:
     post:
       summary: Login user (lookup by email or user_id)
@@ -108,6 +51,70 @@ paths:
           description: Provide user_id or email
         "404":
           description: User not found
+
+  /problems/next:
+    post:
+      summary: Get next scaffolded problem for a user
+      operationId: getNextProblem
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProblemNextRequest"
+      responses:
+        "200":
+          description: Scaffolded problem returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemNextResponse"
+        "400":
+          description: user_id required
+        "404":
+          description: User not found or No problems available
+
+  /interactions/submit:
+    post:
+      summary: Submit a user interaction for a step/problem
+      operationId: submitInteraction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InteractionSubmitRequest"
+      responses:
+        "200":
+          description: Interaction recorded; may return new mastery probability
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionSubmitResponse"
+        "400":
+          description: Validation error
+
+  /users/{user_id}/mastery:
+    get:
+      summary: Get user's mastery state across all skills
+      operationId: getUserMastery
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: The user's unique identifier
+      responses:
+        "200":
+          description: User's mastery data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MasteryResponse"
+        "404":
+          description: User not found
+
   /admin/seed:
     post:
       summary: Seed the remote database (admin only)
@@ -129,8 +136,10 @@ paths:
                 properties:
                   success:
                     type: boolean
+                    example: true
         "401":
           description: Unauthorized
+
 components:
   schemas:
     UserRegisterRequest:
@@ -151,6 +160,7 @@ components:
           type: string
           description: "S1..S6"
           example: "S6"
+
     UserRegisterResponse:
       type: object
       properties:
@@ -159,133 +169,16 @@ components:
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         name:
           type: string
+          example: "Alice Mwami"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
         class_level:
           type: string
-    ProblemNextRequest:
-      type: object
-      required:
-        - user_id
-      properties:
-        user_id:
-          type: string
-          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    ProblemNextResponse:
-      type: object
-      properties:
-        problem_id:
-          type: string
-        skill_name:
-          type: string
-        topic:
-          type: string
-        full_question_text:
-          type: string
-        source:
-          type: string
-        target_exam_level:
-          type: string
-        concept_intro:
-          type: string
-          description: Optional short intro for the concept
-        steps:
-          type: array
-          items:
-            $ref: "#/components/schemas/Step"
-        final_correct_answer:
-          type: string
-        final_explanation:
-          type: string
-    Step:
-      type: object
-      properties:
-        step_id:
-          type: string
-        order:
-          type: integer
-        instruction_text:
-          type: string
-        input_type:
-          type: string
-          example: text
-        explanation:
-          type: string
-        hints:
-          type: array
-          items:
-            $ref: "#/components/schemas/Hint"
-    Hint:
-      type: object
-      properties:
-        level:
-          type: integer
-          description: 1=subtle,2=medium,3=explicit
-        text:
-          type: string
-    InteractionSubmitRequest:
-      type: object
-      required:
-        - user_id
-        - problem_id
-        - step_id
-        - correctness
-      properties:
-        user_id:
-          type: string
-        problem_id:
-          type: string
-        step_id:
-          type: string
-        correctness:
-          type: integer
-          description: 1 = correct, 0 = incorrect
-        hints_used:
-          type: integer
-          default: 0
-        time_taken:
-          type: number
-          format: float
-          default: 0.0
-    InteractionSubmitResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        new_mastery:
-          type: number
-          format: float
-          nullable: true
-    MasteryResponse:
-      type: object
-      properties:
-        mastery:
-          type: array
-          items:
-            $ref: "#/components/schemas/MasteryRecord"
-        message:
-          type: string
-          nullable: true
-    MasteryRecord:
-      type: object
-      properties:
-        skill_name:
-          type: string
-          description: Name of the skill
-        mastery_prob:
-          type: number
-          format: float
-          description: Current mastery probability as a percentage (0-100)
-        delta:
-          type: number
-          format: float
-          description: Change in mastery probability from early to current state (as percentage)
-        last_updated:
-          type: string
-          format: date-time
-          description: ISO timestamp of last update
-        interactions_count:
-          type: integer
-          description: Total number of interactions for this skill
-            UserLoginRequest:
+          example: "S6"
+
+    UserLoginRequest:
       type: object
       additionalProperties: false
       properties:
@@ -299,8 +192,10 @@ components:
           description: User email (case-insensitive lookup recommended)
           example: "alice@example.com"
       anyOf:
-        - required: [user_id]
-        - required: [email]
+        - required:
+            - user_id
+        - required:
+            - email
       description: Provide either user_id or email. If both are provided, backend may prioritize user_id.
 
     UserLoginResponse:
@@ -319,4 +214,167 @@ components:
         class_level:
           type: string
           example: "S6"
+
+    ProblemNextRequest:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+
+    ProblemNextResponse:
+      type: object
+      properties:
+        problem_id:
+          type: string
+          example: "prob-001"
+        skill_name:
+          type: string
+          example: "Algebra"
+        topic:
+          type: string
+          example: "Linear Equations"
+        full_question_text:
+          type: string
+          example: "Solve for x: 2x + 3 = 11"
+        source:
+          type: string
+          example: "Scaffolded Generator"
+        target_exam_level:
+          type: string
+          example: "S4"
+        concept_intro:
+          type: string
+          nullable: true
+          description: Optional short intro for the concept
+          example: "To solve a linear equation, isolate the variable."
+        steps:
+          type: array
+          items:
+            $ref: "#/components/schemas/Step"
+        final_correct_answer:
+          type: string
+          example: "x = 4"
+        final_explanation:
+          type: string
+          example: "Subtract 3 from both sides, then divide both sides by 2."
+
+    Step:
+      type: object
+      properties:
+        step_id:
+          type: string
+          example: "step-001"
+        order:
+          type: integer
+          example: 1
+        instruction_text:
+          type: string
+          example: "Subtract 3 from both sides."
+        input_type:
+          type: string
+          example: "text"
+        explanation:
+          type: string
+          example: "This helps isolate the variable term."
+        hints:
+          type: array
+          items:
+            $ref: "#/components/schemas/Hint"
+
+    Hint:
+      type: object
+      properties:
+        level:
+          type: integer
+          description: 1=subtle, 2=medium, 3=explicit
+          example: 1
+        text:
+          type: string
+          example: "Try removing the constant from the left side first."
+
+    InteractionSubmitRequest:
+      type: object
+      required:
+        - user_id
+        - problem_id
+        - step_id
+        - correctness
+      properties:
+        user_id:
+          type: string
+          example: "93482ab1-604e-4e30-9625-44def73bfb55"
+        problem_id:
+          type: string
+          example: "prob-001"
+        step_id:
+          type: string
+          example: "step-001"
+        correctness:
+          type: integer
+          description: 1 = correct, 0 = incorrect
+          example: 1
+        hints_used:
+          type: integer
+          default: 0
+          example: 1
+        time_taken:
+          type: number
+          format: float
+          default: 0.0
+          example: 12.5
+
+    InteractionSubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        new_mastery:
+          type: number
+          format: float
+          nullable: true
+          example: 78.4
+
+    MasteryResponse:
+      type: object
+      properties:
+        mastery:
+          type: array
+          items:
+            $ref: "#/components/schemas/MasteryRecord"
+        message:
+          type: string
+          nullable: true
+          example: "Mastery retrieved successfully"
+
+    MasteryRecord:
+      type: object
+      properties:
+        skill_name:
+          type: string
+          description: Name of the skill
+          example: "Algebra"
+        mastery_prob:
+          type: number
+          format: float
+          description: Current mastery probability as a percentage (0-100)
+          example: 82.5
+        delta:
+          type: number
+          format: float
+          description: Change in mastery probability from early to current state (as percentage)
+          example: 12.3
+        last_updated:
+          type: string
+          format: date-time
+          description: ISO timestamp of last update
+          example: "2026-03-13T17:07:05Z"
+        interactions_count:
+          type: integer
+          description: Total number of interactions for this skill
+          example: 14
+
   securitySchemes: {}
