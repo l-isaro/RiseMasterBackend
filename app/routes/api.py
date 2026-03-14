@@ -2,7 +2,7 @@ import os
 from flask import Blueprint, request, jsonify, send_file, abort
 from app.extensions import db
 from app.models import Hint, Step, User, Problem, Interaction, MasteryState
-from app.services.problem_manager import get_next_problem, get_next_scaffolded_problem
+from app.services.problem_manager import get_next_problem, get_next_scaffolded_problem, get_problem_by_skill, get_target_exam_level
 from sqlalchemy import func, distinct
 from app.services.bkt_service import BKTService
 import uuid
@@ -211,6 +211,50 @@ def get_user_stats(user_id):
         "problems_solved": int(problems_solved),
         "total_interactions": int(total_interactions),
         "overall_mastery_prob": avg_mastery,  # 0..1
+    }), 200
+
+@api_bp.route('/problems/by-topic', methods=['POST'])
+def get_problem_by_topic():
+    data = request.get_json(silent=True) or {}
+    user_id = data.get("user_id")
+    skill_name = data.get("skill_name")
+
+    if not user_id:
+        return jsonify({"error": "user_id required"}), 400
+    if not skill_name:
+        return jsonify({"error": "skill_name required"}), 400
+
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    problem, steps = get_problem_by_skill(skill_name, user.class_level)
+    if not problem:
+        return jsonify({"error": "No problems available for this topic"}), 404
+
+    steps_data = []
+    for step in steps:
+        hints = Hint.query.filter(Hint.step_id == step.step_id).order_by(Hint.level).all()
+        steps_data.append({
+            "step_id": step.step_id,
+            "order": step.order,
+            "instruction_text": step.instruction_text,
+            "input_type": step.input_type,
+            "explanation": step.explanation,
+            "hints": [{"level": h.level, "text": h.hint_text} for h in hints]
+        })
+
+    return jsonify({
+        "problem_id": problem.problem_id,
+        "skill_name": problem.skill_name,
+        "topic": problem.topic,
+        "full_question_text": problem.question_text,
+        "source": problem.source,
+        "target_exam_level": problem.target_exam_level,
+        "concept_intro": problem.concept_intro,
+        "steps": steps_data,
+        "final_correct_answer": problem.correct_answer,
+        "final_explanation": problem.explanation
     }), 200
 
 
